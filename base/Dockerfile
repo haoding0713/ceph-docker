@@ -10,7 +10,7 @@ ENV ETCDCTL_ARCH linux-amd64
 ENV CEPH_VERSION hammer
 
 # Install prerequisites
-RUN apt-get update &&  apt-get install -y wget
+RUN sed -i "s/archive.ubuntu/mirrors.aliyun/" /etc/apt/sources.list && apt-get update &&  apt-get install -y wget
 
 # Install Ceph
 RUN wget -q -O- 'https://ceph.com/git/?p=ceph.git;a=blob_plain;f=keys/release.asc' | apt-key add -

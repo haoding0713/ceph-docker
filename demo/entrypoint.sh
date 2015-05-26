@@ -95,13 +95,14 @@ ceph osd pool set rbd size 1
 #######
 
 # bootstrap OSD
-mkdir -p /var/lib/ceph/osd/ceph-0
-ceph osd create
-ceph-osd -i 0 --mkfs
-ceph auth get-or-create osd.0 osd 'allow *' mon 'allow profile osd' -o /var/lib/ceph/osd/${CLUSTER}-0/keyring
-ceph osd crush add 0 1 root=default host=$(hostname -s)
-ceph-osd -i 0 -k /var/lib/ceph/osd/ceph-0/keyring
-
+if [ ! -e /var/lib/ceph/osd/ceph-0 ]; then
+    mkdir -p /var/lib/ceph/osd/ceph-0
+    ceph osd create
+    ceph-osd -i 0 --mkfs
+    ceph auth get-or-create osd.0 osd 'allow *' mon 'allow profile osd' -o /var/lib/ceph/osd/${CLUSTER}-0/keyring
+    ceph osd crush add 0 1 root=default host=$(hostname -s)
+    ceph-osd -i 0 -k /var/lib/ceph/osd/ceph-0/keyring
+fi
 # start OSD
 ceph-osd --cluster=${CLUSTER} -i 0
 
@@ -110,15 +111,16 @@ ceph-osd --cluster=${CLUSTER} -i 0
 # MDS #
 #######
 
-# create ceph filesystem
-ceph osd pool create cephfs_data 8
-ceph osd pool create cephfs_metadata 8
-ceph fs new cephfs cephfs_metadata cephfs_data
-
 # bootstrap MDS
-mkdir -p /var/lib/ceph/mds/ceph-0
-ceph auth get-or-create mds.0 mds 'allow' osd 'allow *' mon 'allow profile mds' > /var/lib/ceph/mds/${CLUSTER}-0/keyring
+if [ ! -e /var/lib/ceph/mds/ceph-0 ]; then
+    # create ceph filesystem
+    ceph osd pool create cephfs_data 8
+    ceph osd pool create cephfs_metadata 8
+    ceph fs new cephfs cephfs_metadata cephfs_data
 
+    mkdir -p /var/lib/ceph/mds/ceph-0
+    ceph auth get-or-create mds.0 mds 'allow' osd 'allow *' mon 'allow profile mds' > /var/lib/ceph/mds/${CLUSTER}-0/keyring
+fi
 # start MDS
 ceph-mds --cluster=${CLUSTER} -i 0
 
@@ -128,12 +130,12 @@ ceph-mds --cluster=${CLUSTER} -i 0
 #######
 
 # bootstrap RGW
-mkdir -p /var/lib/ceph/radosgw/${RGW_NAME}
-ceph auth get-or-create client.radosgw.gateway osd 'allow rwx' mon 'allow rw' -o /var/lib/ceph/radosgw/${RGW_NAME}/keyring
-
+if [ ! -e /var/lib/ceph/radosgw/${RGW_NAME} ]; then
+    mkdir -p /var/lib/ceph/radosgw/${RGW_NAME}
+    ceph auth get-or-create client.radosgw.gateway osd 'allow rwx' mon 'allow rw' -o /var/lib/ceph/radosgw/${RGW_NAME}/keyring
+fi
 # start RGW
 radosgw -c /etc/ceph/ceph.conf -n client.radosgw.gateway -k /var/lib/ceph/radosgw/${RGW_NAME}/keyring --rgw-socket-path="" --rgw-frontends="civetweb port=${RGW_CIVETWEB_PORT}"
-
 
 #########
 # WATCH #
